@@ -1,0 +1,99 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+name: QA-Test-$(date:yyyyMMdd)$(rev:.r)
+
+trigger: none
+pr: none
+
+jobs:
+- job: <job name>
+  displayName: <display name>  
+  timeoutInMinutes: 240
+  pool:
+    vmImage: ubuntu-latest
+
+  variables:
+    - group: <Variable group name>
+    - name: workingDirectory
+      value: e2e-automation/
+    - name: mavenRepoName
+      value: kf-ic2-dev
+    - name: MAVEN_CACHE_FOLDER
+      value:  $(HOME)/.m2/repository
+    - name: MAVEN_OPTS
+      value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+    - name: DATE_TIME
+      value: $[format('{0:ddMMyyyy}', pipeline.startTime)]
+    - name: XRAY_SUMMARY
+      value: '$(ENVIRONMENT) - <Target solution name> - $(DATE_TIME)'
+    
+
+  steps:
+    - task: Cache@2
+      inputs:
+        key: '"funcs" | maven |"$(Agent.OS)" | **/pom.xml'
+        restoreKeys: |
+        path: $(MAVEN_CACHE_FOLDER)
+      displayName: Cache Maven local repo
+
+    - task: MavenAuthenticate@0
+      displayName: "Maven Authenticate"
+      inputs:
+        artifactsFeeds: "$(mavenRepoName)"
+
+    - task: Maven@3
+      displayName: "Run E2E Tests"
+      inputs:
+        mavenPomFile: "$(workingDirectory)/pom.xml"
+        goals: "clean install -DtestSuite=$(test_suite)"
+        javaHomeOption: "JDKVersion"
+        mavenVersionOption: "Default"
+        publishJUnitResults: false
+        testResultsFiles: '**/*.json'
+      continueOnError: true
+
+    - bash: |
+        for FILE in $(workingDirectory)target/cucumber-reports/*.json; do 
+            echo $FILE 
+            if jq empty $FILE ; then
+              echo "JSON is valid"
+            else
+              echo "JSON is invalid"
+            fi                        
+        done        
+      displayName: List report files found
+
+    - bash: |
+        echo "Authentication"
+        token=$(curl -k -H "Content-Type: application/json" -X POST --data '{ "client_id": "$(JIRA_CLIENT_ID)","client_secret": "$(JIRA_CLIENT_SECRET)" }' https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
+        echo "Combining report files"
+        jq -s 'add' $(workingDirectory)target/cucumber-reports/*.json > runreport.json    
+        echo "Creating metadata"        
+        jq -n \
+              --arg XRAY_PROJECT_KEY "$(XRAY_PROJECT_KEY)" \
+              --arg ENVIRONMENT "$(ENVIRONMENT)" \
+              --arg XRAY_SUMMARY "$(XRAY_SUMMARY)" \
+              '{
+                 "fields": {
+                   "project": {
+                     "key": $XRAY_PROJECT_KEY
+                   },
+                   "summary": $XRAY_SUMMARY,
+                   "issuetype": {
+                     "id": "10061"
+                   },
+                   "customfield_10155" : [
+                     $ENVIRONMENT
+                   ]
+                 },"xrayFields": {        
+                    "environments": [$ENVIRONMENT]
+                   }
+               }' > runmetadata.json
+        cat runmetadata.json
+        echo "Publishing results"
+        echo $(curl -v -k -X POST -H "Authorization: Bearer ${token}" -F results=@runreport.json -F info=@runmetadata.json https://xray.cloud.xpand-it.com/api/v1/import/execution/cucumber/multipart)
+        echo "Finished">"
+      displayName: Publishing results

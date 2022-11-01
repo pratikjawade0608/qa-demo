@@ -1,0 +1,19 @@
+# Sample pipeline for Integration Automated Tests using QA Framework
+
+name: QA-Automation-$(date:yyyyMMdd)$(rev:.r)
+
+trigger: none
+pr: none
+
+jobs:
+- job: <JOB NAME>
+  displayName: <DISPLAY NAME>
+  timeoutInMinutes: 240
+  pool:
+    vmImage: ubuntu-latest
+
+extends:
+  template: run-e2e-tests-template.yml
+  parameters:
+      name: <name>
+      #TODO finish parameters / take from variable group?
