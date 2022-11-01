@@ -1,0 +1,41 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+name: QA-Test-$(date:yyyyMMdd)$(rev:.r)
+
+trigger: none
+pr: none
+
+jobs:
+- job: <job name>
+  displayName: <display name>  
+  timeoutInMinutes: 240
+  pool:
+    vmImage: ubuntu-latest
+
+  variables:
+    - group: '{Component}_QA_Automation_Settings'
+    - name: workingDirectory
+      value: e2e-automation/
+    - name: mavenRepoName
+      value: kf-ic2-dev
+    - name: MAVEN_CACHE_FOLDER
+      value:  $(HOME)/.m2/repository
+    - name: MAVEN_OPTS
+      value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+    - name: DATE_TIME
+      value: $[format('{0:ddMMyyyy}', pipeline.startTime)]
+    - name: XRAY_SUMMARY
+      value: '$(ENVIRONMENT) - <Target solution name> - $(DATE_TIME)'
+    
+
+  steps:
+    - template: templates/run-tests-and-publish.yml
+      parameters:
+        JIRA_CLIENT_ID: $(JIRA_CLIENT_ID)
+        JIRA_CLIENT_SECRET: $(JIRA_CLIENT_SECRET)
+        XRAY_PROJECT_KEY: $(XRAY_PROJECT_KEY)
+        XRAY_SUMMARY: $(XRAY_SUMMARY)
+        ENVIRONMENT: $(ENVIRONMENT)
