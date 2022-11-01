@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+
+    <groupId>org.kf</groupId>
+    <artifactId>e2e-automation</artifactId>
+    <version>0.0-SNAPSHOT</version>
+
+
+    <properties>
+        <webdriver.version>4.0.0</webdriver.version>
+        <cucumber.version>6.11.0</cucumber.version>
+        <selenium.version>3.141.0</selenium.version>
+        <automationUtils.uri>c:/repos</automationUtils.uri>
+    </properties>
+    <!--<repositories>
+        <repository>
+            <id>KornFerry.IntelligenceCloud.QAAutomation.Library</id>
+            <url>
+                https://pkgs.dev.azure.com/kfdev/IC2/_packaging/KornFerry.IntelligenceCloud.QAAutomation.Library/maven/v1
+            </url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>!-->
+
+    <dependencies>
+        <dependency>
+            <groupId>org.kf</groupId>
+            <artifactId>automation-platform-library</artifactId>
+            <version>4</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.3</version>
+                    <configuration>
+                        <source>1.7</source>
+                        <target>1.7</target>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.0.0-M5</version>
+                    <configuration>
+                        <systemPropertyVariables></systemPropertyVariables>
+                        <suiteXmlFiles>
+                            <suiteXmlFile>src/test/resources/testSuites/sampleTestSuite.xml</suiteXmlFile>
+                        </suiteXmlFiles>
+                        <properties>
+                            <!-- Work around. Surefire does not include enough
+                                 information to disambiguate between different
+                                 examples and scenarios. -->
+                            <configurationParameters>
+                                cucumber.junit-platform.naming-strategy=long
+                            </configurationParameters>
+                        </properties>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>net.masterthought</groupId>
+                    <artifactId>maven-cucumber-reporting</artifactId>
+                    <version>3.20.0</version>
+                    <executions>
+                        <execution>
+                            <id>execution</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>generate</goal>
+                            </goals>
+                            <configuration>
+                                <projectName>QAAutomation</projectName>
+                                <outputDirectory>${project.build.directory}/reports</outputDirectory>
+                                <inputDirectory>${project.build.directory}/</inputDirectory>
+                                <jsonFiles>
+                                    <param>**/*.json</param>
+                                </jsonFiles>
+                                <parallelTesting>false</parallelTesting>
+                                <checkBuildResult>true</checkBuildResult>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
